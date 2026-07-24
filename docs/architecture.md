@@ -75,6 +75,26 @@ sequenceDiagram
     end
 ```
 
+## Write request
+
+```mermaid
+sequenceDiagram
+    participant A as Admin / User
+    participant F as FastAPI
+    participant P as PostgreSQL
+    participant K as Kafka
+    participant W as Worker
+    participant E as Elasticsearch
+
+    A->>F: POST /places (or review)
+    F->>P: Commit transaction
+    P-->>F: Created
+    F-)K: Publish place.events
+    F-->>A: 201 Created (~15 ms)
+    K->>W: Consume place.events
+    W->>E: Index / Update document
+```
+
 ## Data model
 
 ```mermaid

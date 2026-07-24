@@ -50,23 +50,56 @@ This is the part worth understanding — every service earns its place.
 
 **Kafka** decouples writes from everything downstream. Creating a place commits to Postgres and publishes `place.events`; a separate worker consumes it and updates the Elasticsearch document. Searches publish `search.events`, which the same worker turns into search logs and trending counters. A slow Elasticsearch or a burst of analytics can never make a user's write time out.
 
+### Architecture overview
+
+```mermaid
+flowchart TB
+    Client["React Frontend"]
+    API["FastAPI Backend"]
+    Redis[("Redis Cache & Rate Limiter")]
+    ES[("Elasticsearch")]
+    PG[("PostgreSQL + PostGIS")]
+    Kafka{{"Kafka Message Broker"}}
+    Worker["Worker Service"]
+
+    Client -->|REST API| API
+    API -->|1. Cache lookup| Redis
+    API -->|2. Ranked search / autocomplete| ES
+    API -->|3. Hydrate place rows| PG
+    API -->|4. Publish events| Kafka
+    Kafka -->|Consume events| Worker
+    Worker -->|Reindex docs| ES
+    Worker -->|Log analytics| PG
+    Worker -->|Update trending| Redis
+```
+
 ### Search flow
 
-```
-User → FastAPI → Redis (cache hit? return)
-                    ↓ miss
-              Elasticsearch  ── ranked ids ──→ PostgreSQL ── full rows ──→ Response
-                    ↓
-              Kafka search.events → worker → search_logs + trending
+```mermaid
+flowchart LR
+    User(["User / Client"]) --> API["FastAPI"]
+    API -->|1. Check Cache| Redis[("Redis Cache")]
+    API -->|2. Ranked Search| ES[("Elasticsearch")]
+    ES -->|3. Ranked IDs| PG[("PostgreSQL")]
+    PG -->|4. Hydrated Rows| API
+    API -->|5. Store Cache 60s| Redis
+    API -->|6. Async search.events| Kafka{{"Kafka"}}
+    Kafka --> Worker["Worker"]
+    Worker --> Analytics[("Search Logs & Trending")]
 ```
 
 ### Write flow
 
+```mermaid
+flowchart LR
+    Admin(["Admin / User"]) --> API["FastAPI"]
+    API -->|1. Commit Write| PG[("PostgreSQL")]
+    API -->|2. Async place.events| Kafka{{"Kafka"}}
+    Kafka --> Worker["Worker"]
+    Worker -->|3. Index/Update Document| ES[("Elasticsearch")]
 ```
-Admin → FastAPI → PostgreSQL (committed)
-                       ↓
-                 Kafka place.events → worker → Elasticsearch document
-```
+
+> For full architectural details, sequence diagrams, and ER diagrams, see [architecture.md](docs/architecture.md).
 
 ---
 
