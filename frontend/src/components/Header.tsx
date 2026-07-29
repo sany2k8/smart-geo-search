@@ -27,8 +27,12 @@ export default function Header({
   onSignIn: () => void;
   onSignOut: () => void;
 }) {
+  // Solid background, not backdrop-blur: a backdrop-filter on the header creates
+  // a stacking context that traps the search suggestions dropdown (z-[2000])
+  // beneath <main>, so the results list bleeds through it. Without its own
+  // stacking context the dropdown floats above the page in the root context.
   return (
-    <header className="relative shrink-0 border-b border-white/[0.07] bg-ink-900/70 backdrop-blur-xl">
+    <header className="relative shrink-0 border-b border-white/[0.07] bg-ink-900">
       {/* Indeterminate bar: shows the app is working without shifting layout. */}
       {busy && (
         <div className="absolute inset-x-0 top-0 h-[2px] overflow-hidden">
