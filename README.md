@@ -115,6 +115,14 @@ flowchart LR
 
 **Ops** — JWT auth with roles, rate limiting, health checks, search analytics for admins (top queries, zero-result queries, average latency).
 
+### Interface
+
+The list and the map are two views of one selection, so they stay in step: hovering a result highlights its pin and vice versa, selecting either flies the map there and scrolls the card into view. Everything else follows from that — category colour is shared between pin, badge and detail header; active filters appear as removable pills above the results; skeletons mirror the real layout so nothing shifts when data lands; `/` focuses search, arrows walk the suggestions, `Esc` backs out a level.
+
+The map only offers to re-search an area once you have actually moved it, and it frames the top result's city rather than fitting every hit — one match in San Francisco alongside twenty in Tokyo would otherwise force an unreadable whole-world view. The ⤢ control fits everything when you do want the global picture.
+
+Below `md` the panes become a List/Map switch and the filter sidebar becomes a drawer.
+
 ### Ranking, briefly
 
 Text matching is layered loosest to strictest: any term matches (recall), then *every* term matches somewhere fuzzily (`boost: 4`), then exact phrase (`6`), then exact name (`10`). On top sits a deliberately gentle quality boost from rating and popularity, capped at `2.0` — enough to break ties, not enough to let a popular hotel outrank a matching cafe. See [`app/search/queries.py`](backend/app/search/queries.py).
@@ -139,8 +147,9 @@ backend/
   seed/seed.py           deterministic sample-data generator
   tests/                 query-builder unit tests + live API tests
 frontend/src/
-  lib/                   api client · types · useGeoSearch hook
-  components/            Header · SearchBar · FilterPanel · ResultList · PlaceDetail · MapView · AuthDialog
+  lib/                   api client · types · format · categories · toast · useGeoSearch hook
+  components/            Header · SearchBar · FilterPanel · ActiveFilters · ResultList ·
+                         PlaceDetail · MapView · Stars · Skeletons · Toaster · AuthDialog
 ```
 
 Backend modules use absolute imports rooted at `app.`, so a module can move between subpackages without rewriting its imports.
